@@ -21,7 +21,7 @@ app.post('/student', (req, res) => {
     const Student = req.body;
 
     if (Student.naziv.includes(" ") == false) {
-        res.status(400).send({ status: "Greška: naziv nije ispravan" })
+        res.status(400).send({ status: "Greška: naziv nije ispravan" }) 
     }
     else {
         fs.readFile('zapisi/studenti.csv', (error, data) => {
