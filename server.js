@@ -1,6 +1,8 @@
 const fs = require('fs');
 const express = require('express');
 const parser = require('body-parser');
+const url = require('url');
+const querystring = require('querystring');
 const app = express();
 
 app.use(express.static(__dirname));
@@ -12,8 +14,6 @@ app.use(parser.text());
 
 app.get('/student', (req, res) => {
     const Student = req.body;
-    //console.log(Student);
-    //console.log(`Novi student se zove: ${Student.naziv} a broj indeksa je ${Student.index}`);
     res.status(200).send({ status: `Novi student se zove: ${Student.naziv} a broj indeksa je ${Student.index}` });
 });
 
@@ -43,9 +43,7 @@ app.post('/student', (req, res) => {
 app.get('/studentSaIndexom', (req, res) => {
     const Parametri = req.query;
     var ImeTrazenogStudenta;
-    //console.log(Parametri);
     fs.readFile('zapisi/studenti.csv', (err, data) => {
-        //console.log(data.toString());
         var nizRedova = data.toString().split("\n");
         for (var i = 0; i < nizRedova.length; i++) {
             if (Parametri.index == nizRedova[i].split(",")[1]) {
@@ -57,6 +55,58 @@ app.get('/studentSaIndexom', (req, res) => {
     });
 
 });
+//OVO JE TVOJA RUTA//
+//     |
+//     |
+//    \ /
+//     ˇ
+app.get("/prisustvo", (req, res) => {               
+    let parsedUrl = url.parse(req.url)
+    let parsedQuery = querystring.parse(parsedUrl.query);
+    const code = parsedQuery.kodPredmeta;
+    const index = parsedQuery.indexStudenta;
+    const week = parsedQuery.sedmica;
+    if(!(code && index && week)) {
+        res.writeHead("500", {'content-type': 'application/json'});
+        res.end(JSON.stringify({status: "Neispravni parametri za prisustvo!"}))
+        return 
+    }
+    fs.readFile("csv/prisustva.csv", 'utf-8', (error, data) => {
+        const rows = data.split('\n');
+        const help = [];
+        for(let i=0; i<rows.length; i++){
+            const values = rows[i].split(',');
+            if(values[2] == week && values[3] == code && values[4] == index) {
+                help.push(rows[i]);
+            }
+        }
+        if(help.length!==0) {
+            const result = {
+                "prisustvoZaSedmicu": week,
+                "prisutan": 0,
+                "odsutan": 0,
+                "nijeUneseno": 0
+            }
+            for(let i=0; i<help.length; i++){
+                const values = help[i].split(',');
+                result[values[5]]++;
+            }
+            res.writeHead("200", {'content-type': 'application/json'});
+            res.end(JSON.stringify(result))
+            return
+            
+        }
+        else {
+            res.writeHead("404", {'content-type': 'application/json'});
+            res.end(JSON.stringify({status: "Prisustvo ne postoji!"}))
+            return
+        }
+    });
+});
+//     ^
+//    / \
+//     |
+//     |  
 
 
 
